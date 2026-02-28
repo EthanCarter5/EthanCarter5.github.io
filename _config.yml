@@ -10,9 +10,7 @@
 locale                   : "en-US"
 site_theme               : "air" # The available themes options are "default", "air", "sunrise", "mint", "dirt" and "contrast"
 title                    : "Home Page"
-=======
 title                    : "Ethan Carter Sports Analytics Portfolio"
->>>>>>> 7bfe3a1f5724c5e514c85ea7ec87f3d39f8f7809
 title_separator          : "-"
 name                     : "Ethan Carter"
 description              : &description "Sports Analytics"   # Update this with a general description of your site, this is the default if not overridden by a page

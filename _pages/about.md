@@ -14,5 +14,5 @@ I am an Economics major at Appalachian State University pursuing a Sports Analyt
 
 <div style="display: flex; justify-content: center; gap: 20px;">
   <img src="/images/BeaverField.png" alt="Photo 1" width="45%">
-  <img src="/images/EthanProfilePicture(1).png" alt="Photo 2" width="45%">
+  <img src="/images/EthanProfilePicture (1).png" alt="Photo 2" width="45%">
 </div>

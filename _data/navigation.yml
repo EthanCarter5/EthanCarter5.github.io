@@ -1,5 +1,9 @@
 
 main:
+
+  - title: "Resume"
+    url: /cv/
+    
   - title: "Pitching"
     url: /Pitching/
 
@@ -11,10 +15,7 @@ main:
     
   - title: "Projects"
     url: /Projects/
-
-  - title: "Resume"
-    url: /cv/
     
   # - title: "CV"
-  #   url: /cv-json/
+
 

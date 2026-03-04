@@ -1,16 +1,16 @@
 
 main:
   - title: "Pitching"
-    url: /publications/
+    url: /Pitching/
 
   - title: "Hitting"
-    url: /talks/    
+    url: /Hitting/    
 
   - title: "Umpire Reports"
-    url: /teaching/    
+    url: /Umpire_Reports/    
     
   - title: "Projects"
-    url: /portfolio/
+    url: /Projects/
 
   - title: "Resume"
     url: /cv/

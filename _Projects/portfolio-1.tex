@@ -1,0 +1,612 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={App State 2026 Baserunning},
+  pdfauthor={App State Baseball Analytics},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{App State 2026 Baserunning}
+\usepackage{etoolbox}
+\makeatletter
+\providecommand{\subtitle}[1]{% add subtitle to \maketitle
+  \apptocmd{\@title}{\par {\large #1 \par}}{}{}
+}
+\makeatother
+\subtitle{2026 Season - Sabermetric Approximations from Trackman Data}
+\author{App State Baseball Analytics}
+\date{\texttt{r\ format(Sys.Date(),\ \textquotesingle{}\%B\ \%d,\ \%Y\textquotesingle{})}}
+
+\begin{document}
+\maketitle
+
+{
+\setcounter{tocdepth}{3}
+\tableofcontents
+}
+\texttt{\{css,\ echo=FALSE\}\ body\ \ \ \ \ \ \ \ \{\ font-family:\ \textquotesingle{}Segoe\ UI\textquotesingle{},\ Arial,\ sans-serif;\ font-size:\ 15px;\ \}\ h1.title\ \ \ \ \{\ color:\ \#1B3A6B;\ font-size:\ 2.1em;\ \}\ h3.subtitle\ \{\ color:\ \#555;\ font-size:\ 1.1em;\ margin-top:-8px;\ \}\ h2\ \ \ \ \ \ \ \ \ \ \{\ color:\ \#1B3A6B;\ border-bottom:\ 2px\ solid\ \#C8A951;\ padding-bottom:\ 4px;\ \}\ h3\ \ \ \ \ \ \ \ \ \ \{\ color:\ \#333;\ \}\ .metric-grid\ \{\ \ \ display:\ grid;\ \ \ grid-template-columns:\ repeat(auto-fill,\ minmax(160px,\ 1fr));\ \ \ gap:\ 12px;\ \ \ margin:\ 18px\ 0;\ \}\ .metric-card\ \{\ \ \ background:\ \#f8f9fa;\ \ \ border-left:\ 4px\ solid\ \#1B3A6B;\ \ \ border-radius:\ 6px;\ \ \ padding:\ 10px\ 14px;\ \ \ text-align:\ center;\ \}\ .metric-card\ .label\ \{\ font-size:\ 0.78em;\ color:\ \#666;\ font-weight:\ 600;\ letter-spacing:.04em;\ \}\ .metric-card\ .value\ \{\ font-size:\ 1.55em;\ font-weight:\ 700;\ color:\ \#1B3A6B;\ line-height:1.2;\ \}\ .metric-card\ .sub\ \ \ \{\ font-size:\ 0.72em;\ color:\ \#888;\ \}\ .callout\ \{\ \ \ background:\ \#eef4fb;\ \ \ border-left:\ 5px\ solid\ \#2171b5;\ \ \ padding:\ 12px\ 16px;\ \ \ border-radius:\ 4px;\ \ \ margin:\ 14px\ 0;\ \ \ font-size:\ 0.92em;\ \}\ .callout-warn\ \{\ \ \ background:\ \#fff8e1;\ \ \ border-left:\ 5px\ solid\ \#f9a825;\ \ \ padding:\ 12px\ 16px;\ \ \ border-radius:\ 4px;\ \ \ margin:\ 14px\ 0;\ \ \ font-size:\ 0.92em;\ \}\ table\ \{\ font-size:\ 0.88em;\ \}\ thead\ tr\ \{\ background-color:\ \#1B3A6B\ !important;\ color:\ white\ !important;\ \}}
+
+```\{r setup, include=FALSE\} knitr::opts\_chunk\$set( echo = FALSE,
+warning = FALSE, message = FALSE, fig.align = ``center'', dpi = 150 )
+
+pkgs \textless- c(``tidyverse'', ``fmsb'', ``scales'', ``ggrepel'',
+``patchwork'', ``kableExtra'', ``RColorBrewer'') new \textless-
+pkgs{[}!pkgs \%in\% rownames(installed.packages()){]} if (length(new))
+install.packages(new, repos = ``\url{https://cran.rstudio.com/}'')
+
+suppressPackageStartupMessages(\{ library(tidyverse) library(fmsb)
+library(scales) library(ggrepel) library(patchwork) library(kableExtra)
+library(RColorBrewer) library(lubridate) \})
+
+DATA\_FILE \textless- params\(data_file
+MY_TEAM   <- params\)my\_team
+
+TEAM\_COLORS \textless- c(WAK\_DEA = ``\#1B3A6B'', APP\_MOU =
+``\#1A1A1A'') TEAM\_ACCENT \textless- c(WAK\_DEA = ``\#C8A951'',
+APP\_MOU = ``\#FFCC00'')
+
+\begin{verbatim}
+
+```{r load-data}
+raw <- read_csv(DATA_FILE, show_col_types = FALSE)
+
+raw <- raw %>%
+  filter(
+    !str_detect(BatterTeam,  regex("practice|scrimmage|intrasquad|fall|spring practice", ignore_case = TRUE)),
+    !str_detect(PitcherTeam, regex("practice|scrimmage|intrasquad|fall|spring practice", ignore_case = TRUE)),
+    !BatterTeam  %in% c("APP_PRA"),
+    !PitcherTeam %in% c("APP_PRA")
+  ) %>%
+  filter(mdy(Date) >= as.Date("2026-02-13"))
+
+#cat("Games included:", n_distinct(raw$GameID), "\n")
+#cat("Date range:", as.character(min(mdy(raw$Date))),
+   # "to", as.character(max(mdy(raw$Date))), "\n")
+#cat("Teams remaining:", paste(unique(raw$BatterTeam), collapse = ", "), "\n")
+
+total_games <- n_distinct(raw$GameID)
+date_start  <- min(mdy(raw$Date))
+date_end    <- max(mdy(raw$Date))
+\end{verbatim}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\textbf{Season:} 2026 ~\textbar~ \textbf{Games:}
+\texttt{r\ total\_games} ~\textbar~ \textbf{Date Range:}
+\texttt{r\ date\_start} to \texttt{r\ date\_end} \textbf{Metrics are
+Trackman-proxied} --- no Statcast GPS. See the \emph{Methodology}
+section for formula details.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\texttt{\{r\ pa-classification\}\ pa\_df\ \textless{}-\ raw\ \%\textgreater{}\%\ \ \ arrange(PitchNo)\ \%\textgreater{}\%\ \ \ group\_by(Batter,\ BatterTeam,\ Inning,\ PAofInning)\ \%\textgreater{}\%\ \ \ slice\_tail(n\ =\ 1)\ \%\textgreater{}\%\ \ \ ungroup()\ \%\textgreater{}\%\ \ \ mutate(\ \ \ \ \ PlayResult\ \ \ \ =\ replace\_na(as.character(PlayResult),\ "Undefined"),\ \ \ \ \ KorBB\ \ \ \ \ \ \ \ \ =\ replace\_na(as.character(KorBB),\ \ \ \ \ \ "Undefined"),\ \ \ \ \ TaggedHitType\ =\ replace\_na(as.character(TaggedHitType),\ "Undefined"),\ \ \ \ \ ExitSpeed\ \ \ \ \ =\ suppressWarnings(as.numeric(ExitSpeed)),\ \ \ \ \ Angle\ \ \ \ \ \ \ \ \ =\ suppressWarnings(as.numeric(Angle)),\ \ \ \ \ Distance\ \ \ \ \ \ =\ suppressWarnings(as.numeric(Distance)),\ \ \ \ \ RunsScored\ \ \ \ =\ replace\_na(suppressWarnings(as.numeric(RunsScored)),\ 0),\ \ \ \ \ OutsOnPlay\ \ \ \ =\ replace\_na(suppressWarnings(as.numeric(OutsOnPlay)),\ 0),\ \ \ \ \ Outs\ \ \ \ \ \ \ \ \ \ =\ replace\_na(suppressWarnings(as.numeric(Outs)),\ 0),\ \ \ \ \ is\_1b\ \ \ \ \ \ =\ PlayResult\ ==\ "Single",\ \ \ \ \ is\_2b\ \ \ \ \ \ =\ PlayResult\ ==\ "Double",\ \ \ \ \ is\_3b\ \ \ \ \ \ =\ PlayResult\ ==\ "Triple",\ \ \ \ \ is\_hr\ \ \ \ \ \ =\ PlayResult\ ==\ "HomeRun",\ \ \ \ \ is\_hit\ \ \ \ \ =\ is\_1b\ \textbar{}\ is\_2b\ \textbar{}\ is\_3b\ \textbar{}\ is\_hr,\ \ \ \ \ is\_walk\ \ \ \ =\ KorBB\ ==\ "Walk",\ \ \ \ \ is\_k\ \ \ \ \ \ \ =\ KorBB\ ==\ "Strikeout",\ \ \ \ \ is\_gdp\ \ \ \ \ =\ PlayResult\ ==\ "Out"\ \&\ TaggedHitType\ ==\ "GroundBall"\ \&\ OutsOnPlay\ ==\ 2,\ \ \ \ \ is\_gdp\_opp\ =\ PlayResult\ ==\ "Out"\ \&\ TaggedHitType\ ==\ "GroundBall"\ \&\ Outs\ ==\ 0,\ \ \ \ \ is\_sac\ \ \ \ \ =\ PlayResult\ ==\ "Sacrifice",\ \ \ \ \ is\_error\ \ \ =\ PlayResult\ ==\ "Error",\ \ \ \ \ is\_fc\ \ \ \ \ \ =\ PlayResult\ ==\ "FieldersChoice"\ \ \ )}
+
+```\{r batter-stats\} batter\_stats \textless- pa\_df \%\textgreater\%
+group\_by(Batter, BatterTeam) \%\textgreater\% summarise( PA = n(), AB =
+sum(!is\_walk \& !is\_sac), H = sum(is\_hit), Singles = sum(is\_1b),
+Doubles = sum(is\_2b), Triples = sum(is\_3b), HR = sum(is\_hr), BB =
+sum(is\_walk), K = sum(is\_k), Runs = sum(RunsScored), GDP =
+sum(is\_gdp), GDP\_opp = sum(is\_gdp\_opp), SAC = sum(is\_sac), Errors =
+sum(is\_error), FC = sum(is\_fc), avg\_EV = mean(ExitSpeed, na.rm =
+TRUE), avg\_LA = mean(Angle, na.rm = TRUE), avg\_Dist = mean(Distance,
+na.rm = TRUE), max\_EV = max(ExitSpeed, na.rm = TRUE), .groups =
+``drop'' ) \%\textgreater\% mutate( avg\_EV = ifelse(is.nan(avg\_EV)
+\textbar{} is.infinite(avg\_EV), NA\_real\_, avg\_EV), max\_EV =
+ifelse(is.nan(max\_EV) \textbar{} is.infinite(max\_EV), NA\_real\_,
+max\_EV), avg\_LA = ifelse(is.nan(avg\_LA) \textbar{}
+is.infinite(avg\_LA), NA\_real\_, avg\_LA), AVG = ifelse(AB
+\textgreater{} 0, H / AB, 0), OBP = ifelse(PA \textgreater{} 0, (H + BB)
+/ PA, 0), SLG = ifelse(AB \textgreater{} 0, (Singles + 2\emph{Doubles +
+3}Triples + 4*HR) / AB, 0), OPS = OBP + SLG )
+
+batter\_stats \textless- batter\_stats \%\textgreater\% filter(PA
+\textgreater= 10)
+
+\begin{verbatim}
+
+
+```{r sabermetrics}
+# D1 College Baseball Linear Weights (Frey, 2019 NCAA Play-by-Play Data)
+# Source: rfrey22.medium.com/collegiate-linear-weights
+wBB        <- 0.64
+w1B        <- 0.79
+w2B        <- 1.12
+w3B        <- 1.40
+wHR        <- 1.74
+lg_wOBA    <- 0.363
+wOBA_scale <- 1.194
+
+batter_stats <- batter_stats %>%
+  mutate(
+    wOBA = ifelse(PA > 0,
+                  (wBB*BB + w1B*Singles + w2B*Doubles + w3B*Triples + wHR*HR) / PA, 0),
+    wRAA      = round((wOBA - lg_wOBA) / wOBA_scale * PA, 3),
+    SB_proxy  = Triples + FC + Errors,
+    wSB       = round(SB_proxy * 0.20, 3),
+    Exp_Runs  = HR*1.74 + Doubles*1.12 + Triples*1.40 + Singles*0.79 + BB*0.64,
+    UBR_raw   = Runs - Exp_Runs,
+    UBR       = round(rescale(UBR_raw, to = c(-2, 2)), 3),
+    GDP_rate  = ifelse(GDP_opp > 0, GDP / GDP_opp, 0),
+    wGDP      = round(-0.37 * GDP, 3),
+    GDP_avoid = round((1 - GDP_rate) * 100, 1),
+    XBT_pct   = round(ifelse((Doubles + Triples) > 0,
+                             Triples / (Doubles + Triples) * 100, 0), 1),
+    speed_input      = coalesce(avg_EV, 85) + (FC + Errors + Triples) * 2.5,
+    sprint_speed_est = round(rescale(speed_input, to = c(21, 32)), 1),
+    BsR    = round(wSB + UBR + wGDP, 3),
+    WAR_PC = round((wRAA + BsR) / 10, 3)
+  )
+
+radar_df <- batter_stats %>%
+  transmute(
+    Batter, BatterTeam,
+    OBP         = round(rescale(OBP,              to=c(0,100), from=c(0.0, 0.6)),  1),
+    SLG         = round(rescale(SLG,              to=c(0,100), from=c(0.0, 1.0)),  1),
+    `XBT%`      = round(rescale(XBT_pct,          to=c(0,100), from=c(0, 100)),    1),
+    `GDP Avoid` = round(rescale(GDP_avoid,         to=c(0,100), from=c(0, 100)),    1),
+    `Spd Proxy` = round(rescale(sprint_speed_est,  to=c(0,100), from=c(21, 32)),   1),
+    wOBA        = round(rescale(wOBA,              to=c(0,100), from=c(0.20, 0.60)),1),
+    BsR         = round(rescale(BsR,               to=c(0,100), from=c(-3, 3)),    1)
+  ) %>%
+  mutate(across(where(is.numeric), ~pmin(pmax(., 0), 100)))
+\end{verbatim}
+
+\subsection{Game Summary}\label{game-summary}
+
+````\{r game-summary-cards, results=`asis'\} my\_team\_stats \textless-
+batter\_stats \%\textgreater\% filter(BatterTeam == MY\_TEAM)
+
+total\_pa \textless- sum(my\_team\_stats\(PA)
+avg_ev_my      <- round(mean(my_team_stats\)avg\_EV, na.rm=TRUE), 1)
+avg\_bsr\_my \textless- round(mean(my\_team\_stats\(BsR), 2)
+top_bsr_player <- my_team_stats %>% slice_max(BsR, n=1) %>% pull(Batter) %>% str_extract("^[^,]+")
+top_spd_player <- my_team_stats %>% slice_max(sprint_speed_est, n=1) %>% pull(Batter) %>% str_extract("^[^,]+")
+team_war       <- round(sum(my_team_stats\)WAR\_PC), 3)
+
+cat('
+
+`) cat(sprintf('
+
+GAMES
+
+\%d
+
+2026 season
+
+`, total\_games)) cat(sprintf('
+
+TOTAL PA
+
+\%d
+
+\%s
+
+`, total\_pa, MY\_TEAM)) cat(sprintf('
+
+AVG EXIT VELO
+
+\%s
+
+mph
+
+`, avg\_ev\_my)) cat(sprintf('
+
+TEAM AVG BsR
+
+\%s
+
+runs above avg
+
+`, avg\_bsr\_my)) cat(sprintf('
+
+TOP BsR
+
+\%s
+
+best baserunner
+
+`, top\_bsr\_player)) cat(sprintf('
+
+TEAM WAR-PC
+
+\%s
+
+baserunning WAR
+
+`, team\_war)) cat('
+
+')
+
+\begin{verbatim}
+
+## Baserunning Metrics — `r MY_TEAM`
+
+### BsR — Base Running Runs Above Average
+
+```{r bsr-bar, fig.width=9, fig.height=5.5}
+batter_stats %>%
+  filter(BatterTeam == MY_TEAM) %>%
+  mutate(Name = str_extract(Batter, "^[^,]+"),
+         Name = fct_reorder(Name, BsR)) %>%
+  ggplot(aes(x = Name, y = BsR, fill = BsR)) +
+  geom_col(width = 0.7, color = "white", linewidth = 0.3) +
+  geom_hline(yintercept = 0, linewidth = 0.7, linetype = "dashed", color = "grey40") +
+  geom_text(aes(label = round(BsR, 2),
+                hjust = ifelse(BsR >= 0, -0.2, 1.2)),
+            size = 3.5, fontface = "bold") +
+  scale_fill_gradient2(low = "#d73027", mid = "#ffffbf", high = "#1a9850", midpoint = 0) +
+  scale_y_continuous(expand = expansion(mult = c(0.2, 0.2))) +
+  coord_flip() +
+  labs(title = paste0(MY_TEAM, " — BsR (Base Running Runs)"),
+       subtitle = "BsR = wSB + UBR + wGDP  |  0 = league-average runner",
+       x = NULL, y = "BsR (runs above average)") +
+  theme_minimal(base_size = 13) +
+  theme(legend.position = "none",
+        plot.title    = element_text(face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(color = "grey45", hjust = 0.5),
+        panel.grid.major.y = element_blank())
+```
+
+### wSB & UBR — Stolen Base Value vs. Base Running Value
+
+```{r wsb-ubr, fig.width=9, fig.height=6}
+batter_stats %>%
+  filter(BatterTeam == MY_TEAM) %>%
+  mutate(Name = str_extract(Batter, "^[^,]+")) %>%
+  ggplot(aes(x = wSB, y = UBR, label = Name)) +
+  annotate("rect", xmin=-Inf, xmax=0, ymin=0,    ymax=Inf,  fill="#fee0d2", alpha=0.35) +
+  annotate("rect", xmin=0,    xmax=Inf, ymin=0,  ymax=Inf,  fill="#e5f5e0", alpha=0.35) +
+  annotate("rect", xmin=-Inf, xmax=0, ymin=-Inf, ymax=0,    fill="#fee0d2", alpha=0.35) +
+  annotate("rect", xmin=0,    xmax=Inf, ymin=-Inf, ymax=0,  fill="#fff7bc", alpha=0.35) +
+  annotate("text", x=Inf,  y=Inf,  label="Elite", hjust=1.2, vjust=1.4, color="grey40", size=3.5, fontface="italic") +
+  annotate("text", x=-Inf, y=Inf,  label="not stealing", hjust=-0.2, vjust=1.3, color="grey40", size=3.2, fontface="italic") +
+  geom_vline(xintercept = 0, color = "grey50", linewidth = 0.6) +
+  geom_hline(yintercept = 0, color = "grey50", linewidth = 0.6) +
+  geom_point(aes(color = BsR), size = 4.5) +
+  geom_text_repel(size = 3.4, max.overlaps = 20, box.padding = 0.5) +
+  scale_color_gradient2(low="#d73027", mid="#ffffbf", high="#1a9850", midpoint=0, name="BsR") +
+  labs(title    = paste0(MY_TEAM, " — wSB vs. UBR"),
+       subtitle = "Upper-right = best overall baserunner; green = above average",
+       x = "wSB (stolen-base run value proxy)",
+       y = "UBR (base running value ex-SB)") +
+  theme_minimal(base_size = 13) +
+  theme(plot.title    = element_text(face="bold", hjust=0.5),
+        plot.subtitle = element_text(color="grey45", hjust=0.5),
+        legend.position = "right")
+```
+
+### XBT% — Extra Bases Taken Rate
+
+```{r xbt-bar, fig.width=9, fig.height=5}
+batter_stats %>%
+  filter(BatterTeam == MY_TEAM) %>%
+  mutate(Name = str_extract(Batter, "^[^,]+"),
+         Name = fct_reorder(Name, XBT_pct)) %>%
+  ggplot(aes(x = Name, y = XBT_pct, fill = XBT_pct)) +
+  geom_col(width = 0.7, color = "white") +
+  geom_text(aes(label = paste0(round(XBT_pct, 0), "%")),
+            hjust = -0.2, size = 3.4, fontface = "bold") +
+  scale_fill_gradient(low = "#fee8c8", high = "#e34a33") +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.2))) +
+  coord_flip() +
+  labs(title    = paste0(MY_TEAM, " — Extra Bases Taken %"),
+       subtitle = "XBT% = Triples ÷ (Doubles + Triples) × 100",
+       x = NULL, y = "XBT%") +
+  theme_minimal(base_size = 13) +
+  theme(legend.position = "none",
+        plot.title    = element_text(face="bold", hjust=0.5),
+        plot.subtitle = element_text(color="grey45", hjust=0.5),
+        panel.grid.major.y = element_blank())
+```
+
+### Sprint Speed Proxy
+```{r sprint-bar, fig.width=9, fig.height=5}
+batter_stats %>%
+  filter(BatterTeam == MY_TEAM) %>%
+  mutate(Name = str_extract(Batter, "^[^,]+"),
+         Name = fct_reorder(Name, sprint_speed_est)) %>%
+  ggplot(aes(x = Name, y = sprint_speed_est, fill = sprint_speed_est)) +
+  geom_col(width = 0.7, color = "white") +
+  geom_text(aes(label = paste0(round(sprint_speed_est, 1), " ft/s")),
+            hjust = -0.15, size = 3.4, fontface = "bold") +
+  scale_fill_gradient(low = "#deebf7", high = "#2171b5") +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.18)), limits = c(0, NA)) +
+  coord_flip() +
+  labs(title    = paste0(MY_TEAM, " — Sprint Speed Proxy"),
+       subtitle = "Estimated from Exit Velo + aggressive base events (Triples, FC, Errors reached)",
+       x = NULL, y = "Sprint Speed Proxy (ft/sec)") +
+  theme_minimal(base_size = 13) +
+  theme(legend.position = "none",
+        plot.title    = element_text(face="bold", hjust=0.5),
+        plot.subtitle = element_text(color="grey45", hjust=0.5, size=9),
+        panel.grid.major.y = element_blank())
+```
+
+### wGDP — Double Play Run Value
+
+```{r wgdp-bar, fig.width=9, fig.height=5}
+batter_stats %>%
+  filter(BatterTeam == MY_TEAM) %>%
+  mutate(Name = str_extract(Batter, "^[^,]+"),
+         Name = fct_reorder(Name, wGDP)) %>%
+  ggplot(aes(x = Name, y = wGDP, fill = wGDP)) +
+  geom_col(width = 0.7, color = "white") +
+  geom_hline(yintercept = 0, linewidth = 0.7, linetype = "dashed", color = "grey40") +
+  geom_text(aes(label = round(wGDP, 3),
+                hjust = ifelse(wGDP >= 0, -0.2, 1.2)),
+            size = 3.4) +
+  scale_fill_gradient2(low="#d73027", mid="#ffffbf", high="#1a9850", midpoint=0) +
+  scale_y_continuous(expand = expansion(mult = c(0.2, 0.2))) +
+  coord_flip() +
+  labs(title    = paste0(MY_TEAM, " — wGDP (Double Play Run Value)"),
+       subtitle = "Positive = fewer DPs than expected | −0.37 runs per GDP",
+       x = NULL, y = "wGDP (runs)") +
+  theme_minimal(base_size = 13) +
+  theme(legend.position = "none",
+        plot.title    = element_text(face="bold", hjust=0.5),
+        plot.subtitle = element_text(color="grey45", hjust=0.5, size=9),
+        panel.grid.major.y = element_blank())
+```
+
+### WAR-PC — Baserunning Partial Credit WAR
+
+```{r war-pc, fig.width=9, fig.height=5}
+batter_stats %>%
+  filter(BatterTeam == MY_TEAM) %>%
+  mutate(Name = str_extract(Batter, "^[^,]+"),
+         Name = fct_reorder(Name, WAR_PC)) %>%
+  ggplot(aes(x = Name, y = WAR_PC)) +
+  geom_segment(aes(xend = Name, yend = 0), color = "grey65", linewidth = 1.2) +
+  geom_point(aes(color = WAR_PC), size = 5.5) +
+  geom_hline(yintercept = 0, linewidth = 0.7, linetype = "dashed", color = "grey40") +
+  geom_text(aes(label = round(WAR_PC, 3),
+                hjust = ifelse(WAR_PC >= 0, -0.4, 1.4)),
+            size = 3.2, fontface = "bold") +
+  scale_color_gradient2(low="#d73027", mid="#ffffbf", high="#1a9850", midpoint=0) +
+  scale_y_continuous(expand = expansion(mult = c(0.2, 0.2))) +
+  coord_flip() +
+  labs(title    = paste0(MY_TEAM, " — WAR-PC (Partial Contribution WAR)"),
+       subtitle = "WAR-PC = (wRAA + BsR) ÷ 10  |  2026 Season",
+       x = NULL, y = "WAR-PC") +
+  theme_minimal(base_size = 13) +
+  theme(legend.position = "none",
+        plot.title    = element_text(face="bold", hjust=0.5),
+        plot.subtitle = element_text(color="grey45", hjust=0.5),
+        panel.grid.major.y = element_blank())
+```
+
+##  Radar Maps — Individual Baserunning Profiles
+
+> Each axis is normalized 0–100 across all qualifying batters in the 2026 season.
+
+```{r radar-grid, fig.width=12, fig.height=4 * ceiling(nrow(radar_df %>% filter(BatterTeam == MY_TEAM)) / 3)}
+
+draw_radar_gg <- function(batter_name, r_df, color_fill, color_border) {
+  row <- r_df %>% filter(Batter == batter_name)
+  if (nrow(row) == 0) return(invisible(NULL))
+  
+  metric_cols <- c("OBP","SLG","XBT%","GDP Avoid","Spd Proxy","wOBA","BsR")
+  
+  # Extract as a named numeric vector explicitly
+  vals <- unlist(as.numeric(row[1, metric_cols]))
+  vals <- replace(vals, is.na(vals), 0)   # replace any NAs with 0
+  
+  rdata <- as.data.frame(rbind(
+    max    = rep(100, length(metric_cols)),
+    min    = rep(0,   length(metric_cols)),
+    player = vals
+  ))
+  colnames(rdata) <- metric_cols
+
+  radarchart(rdata, axistype=1,
+             pcol=color_border, pfcol=adjustcolor(color_fill, alpha.f=0.35),
+             plwd=2.5, plty=1, cglcol="grey75", cglty=1, cglwd=0.6,
+             axislabcol="grey40", vlcex=0.78,
+             caxislabels=c("0","25","50","75","100"),
+             title=str_extract(batter_name, "^[^,]+"))
+}
+
+team_batters <- radar_df %>% filter(BatterTeam == MY_TEAM) %>% pull(Batter)
+n  <- length(team_batters)
+nc <- 3
+nr <- ceiling(n / nc)
+
+par(mfrow=c(nr, nc), mar=c(1.5,1.5,2.5,1.5), oma=c(0,0,3,0), bg="#F9FAFB")
+
+fill_col   <- TEAM_COLORS[MY_TEAM]
+border_col <- TEAM_ACCENT[MY_TEAM]
+
+for (b in team_batters) draw_radar_gg(b, radar_df, fill_col, border_col)
+
+blanks <- nc * nr - n
+if (blanks > 0) for (i in seq_len(blanks)) plot.new()
+
+mtext(paste("Baserunning Radar Maps —", MY_TEAM), outer=TRUE, cex=1.3, font=2, col=fill_col, line=1)
+```
+
+##  Full Metrics Table
+
+```{r metrics-table}
+batter_stats %>%
+  filter(BatterTeam == MY_TEAM) %>%
+  arrange(desc(BsR)) %>%
+  mutate(Name = str_extract(Batter, "^[^,]+")) %>%
+  select(Name, PA, H, Doubles, Triples, HR, BB, K,
+         AVG, OBP, SLG, wOBA, wRAA, wSB, UBR, wGDP, BsR,
+         XBT_pct, GDP, sprint_speed_est, WAR_PC) %>%
+  rename(`2B`=Doubles, `3B`=Triples, `XBT%`=XBT_pct,
+         `Spd Est`=sprint_speed_est, `WAR-PC`=WAR_PC) %>%
+  mutate(across(where(is.double), ~round(., 3))) %>%
+  kbl(align = c("l", rep("c", 20))) %>%
+  kable_styling(bootstrap_options = c("striped","hover","condensed","responsive"),
+                full_width=TRUE, font_size=12) %>%
+  add_header_above(c(" "=8, "Traditional"=4, "Sabermetric Baserunning"=5, "Speed/GDP"=3, "Value"=1)) %>%
+  column_spec(1, bold=TRUE) %>%
+ # column_spec(14, background="#e5f5e0") %>%
+  column_spec(21, background="#eef4fb")
+```
+
+## Team Trend by Game — Comparative Dashboard
+````{r season-trend, fig.width=11, fig.height=5.5}
+# BsR trend across the season by game date
+raw %>%
+  filter(BatterTeam == MY_TEAM) %>%
+  arrange(PitchNo) %>%
+  group_by(Batter, BatterTeam, Inning, PAofInning, Date, GameID) %>%
+  slice_tail(n = 1) %>%
+  ungroup() %>%
+  mutate(
+    is_hit  = PlayResult %in% c("Single","Double","Triple","HomeRun"),
+    is_walk = KorBB == "Walk",
+    is_sac  = PlayResult == "Sacrifice",
+    is_gdp  = PlayResult == "Out" & TaggedHitType == "GroundBall" & as.numeric(OutsOnPlay) == 2,
+    is_fc   = PlayResult == "FieldersChoice",
+    is_error = PlayResult == "Error",
+    is_3b   = PlayResult == "Triple"
+  ) %>%
+  group_by(GameID, Date) %>%
+  summarise(
+    PA      = n(),
+    GDP     = sum(is_gdp),
+    SB_prox = sum(is_3b) + sum(is_fc) + sum(is_error),
+    Runs    = sum(as.numeric(RunsScored), na.rm=TRUE),
+    Exp_R   = sum(PlayResult=="HomeRun")*1.74 + sum(PlayResult=="Double")*1.12 +
+              sum(PlayResult=="Triple")*1.4  + sum(PlayResult=="Single")*0.79,
+    .groups = "drop"
+  ) %>%
+  mutate(
+    wSB_g  = SB_prox * 0.20,
+    UBR_g  = rescale(Runs - Exp_R, to = c(-2, 2)),
+    wGDP_g = -0.37 * GDP,
+    BsR_g  = wSB_g + UBR_g + wGDP_g,
+    Date   = mdy(Date)
+  ) %>%
+  ggplot(aes(x = Date, y = BsR_g)) +
+  geom_line(color = TEAM_COLORS[MY_TEAM], linewidth = 1) +
+  geom_point(aes(color = BsR_g), size = 3) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey40") +
+  geom_smooth(method = "loess", se = TRUE, color = TEAM_ACCENT[MY_TEAM],
+              fill = TEAM_ACCENT[MY_TEAM], alpha = 0.15, linewidth = 0.8) +
+  scale_color_gradient2(low="#d73027", mid="#ffffbf", high="#1a9850", midpoint=0) +
+  scale_x_date(date_labels = "%b %d", date_breaks = "1 week") +
+  labs(
+    title    = paste0(MY_TEAM, " — BsR Trend by Game (2026 Season)"),
+    subtitle = "Each point = one game | smoothed trend line",
+    x = NULL, y = "BsR (game total)"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(legend.position = "none",
+        plot.title    = element_text(face="bold", hjust=0.5),
+        plot.subtitle = element_text(color="grey45", hjust=0.5),
+        axis.text.x   = element_text(angle=45, hjust=1))
+\end{verbatim}
+
+\subsection{Methodology \& Metric
+Definitions}\label{methodology-metric-definitions}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.1429}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.4643}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3929}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Metric
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Formula (Trackman Proxy)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+True Statcast Source
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\textbf{BsR} & wSB + UBR + wGDP & FanGraphs / Baseball Savant \\
+\textbf{wSB} & (Triples + FC + ROE) × 0.20 & SB × +0.20 + CS × −0.38 \\
+\textbf{UBR} & Rescaled (Actual Runs − Expected Runs) & Retrosheet
+base-to-base tracking \\
+\textbf{wGDP} & −0.37 × GDP & Same formula \\
+\textbf{XBT\%} & Triples ÷ (2B + 3B) × 100 & Extra bases taken /
+opportunities \\
+\textbf{Sprint Speed} & Rescaled (avg EV + aggressive events) & Statcast
+2--8 sec GPS window \\
+\textbf{wOBA} & (wBB×BB + w1B×1B + \ldots{} + wHR×HR) / PA & FanGraphs
+linear weights \\
+\textbf{WAR-PC} & (wRAA + BsR) / 10 & Aggregated WAR model \\
+\end{longtable}
+
+\textbf{Linear Weights:} BB=0.64 \textbar{} 1B=0.79 \textbar{} 2B=1.12
+\textbar{} 3B=1.40 \textbar{} HR=1.74 \textbar{} lg wOBA=0.363
+\textbar{} wOBA Scale=1.194
+
+\emph{Report generated from Trackman game export. Knit with:}
+\texttt{rmarkdown::render("baserunning\_report.Rmd",\ params\ =\ list(data\_file\ =\ "2025-2026\ (2).csv",\ my\_team\ =\ "YOUR\_TEAM"))}
+
+\end{document}

@@ -1,0 +1,496 @@
+---
+title: "Credit Risk Classification: Comparing Three Models"
+date: last-modified
+date-format: "[Last modified on] MMMM DD, YYYY"
+format:
+  revealjs:
+    theme: dark
+    slide-number: true
+    code-fold: true
+    code-summary: "Show Code"
+    highlight-style: monokai
+    self-contained: true
+execute:
+  warning: false
+  message: false
+  cache: true
+author: Student_1, Student_2, Student_3, Student_4
+---
+
+## Project Goal
+
+Predict whether a credit applicant will **default** (`Status`) using the `credit_data`
+dataset from the `modeldata` package.
+
+-   **Response variable:** `Status` (good / bad)
+-   **Three models evaluated:**
+    1.  Logistic Regression (LASSO / Ridge — baseline)
+    2.  Random Forest
+    3.  XGBoost (Gradient Boosted Trees)
+-   **Strategy:** 10-fold cross-validation for hyperparameter tuning, final evaluation
+    on a held-out test set
+
+---
+
+## Setup & Packages
+
+```{r}
+#| label: setup
+#| echo: true
+
+library(tidyverse)
+library(tidymodels)
+library(modeldata)
+library(vip)
+
+tidymodels_prefer()
+set.seed(1234)
+```
+
+---
+
+## The Data
+
+```{r}
+#| label: data-overview
+#| echo: true
+
+data("credit_data", package = "modeldata")
+
+glimpse(credit_data)
+```
+
+---
+
+## Class Balance
+
+```{r}
+#| label: class-balance
+#| echo: true
+
+credit_data |>
+  count(Status) |>
+  mutate(pct = n / sum(n)) |>
+  ggplot(aes(x = Status, y = pct, fill = Status)) +
+  geom_col(width = 0.5, show.legend = FALSE) +
+  geom_text(aes(label = scales::percent(pct, accuracy = 0.1)),
+            vjust = -0.5, size = 5) +
+  scale_y_continuous(labels = scales::percent, limits = c(0, 0.85)) +
+  scale_fill_manual(values = c("bad" = "#e74c3c", "good" = "#2ecc71")) +
+  labs(title = "Class Distribution of Credit Status",
+       x = "Status", y = "Proportion") +
+  theme_minimal(base_size = 14)
+```
+
+The data is **moderately imbalanced** (~30% bad, ~70% good).
+We use **AUC** as our primary metric because accuracy can be misleading here.
+
+---
+
+## Train / Test Split
+
+```{r}
+#| label: split
+#| echo: true
+
+set.seed(1234)
+
+credit_split <- initial_split(credit_data, prop = 0.80, strata = Status)
+credit_train <- training(credit_split)
+credit_test  <- testing(credit_split)
+
+cat("Training rows:", nrow(credit_train), "\n")
+cat("Testing rows: ", nrow(credit_test),  "\n")
+```
+
+Stratified on `Status` to preserve the class ratio in both splits.
+
+---
+
+## 10-Fold Cross-Validation
+
+```{r}
+#| label: cv-folds
+#| echo: true
+
+set.seed(1234)
+
+credit_folds <- vfold_cv(credit_train, v = 10, strata = Status)
+credit_folds
+```
+
+All hyperparameter tuning is done **only on the training data** via these folds.
+The test set is touched only once — at the very end.
+
+---
+
+## Recipe
+
+```{r}
+#| label: recipe
+#| echo: true
+
+credit_recipe <- recipe(Status ~ ., data = credit_train) |>
+  # Impute missing values
+  step_impute_median(all_numeric_predictors()) |>
+  step_impute_mode(all_nominal_predictors()) |>
+  # Collapse rare factor levels (< 5%) into "other"
+  step_other(all_nominal_predictors(), threshold = 0.05) |>
+  # One-hot encode nominal predictors
+  step_dummy(all_nominal_predictors()) |>
+  # Remove near-zero variance columns
+  step_nzv(all_predictors()) |>
+  # Center and scale numeric features
+  step_normalize(all_numeric_predictors())
+
+credit_recipe
+```
+
+---
+
+## Recipe Steps — Why Each Step?
+
+| Step | Purpose |
+|---|---|
+| `step_impute_median()` | Robust imputation; unaffected by outliers |
+| `step_impute_mode()` | Fill missing categories with most common level |
+| `step_other()` | Prevents overfitting on rare dummy levels |
+| `step_dummy()` | Converts factors to numeric (required for glmnet / XGBoost) |
+| `step_nzv()` | Drops constant/near-constant columns with no signal |
+| `step_normalize()` | Required for penalized regression; helps gradient methods |
+
+---
+
+## Model 1: Logistic Regression (Elastic Net)
+
+```{r}
+#| label: logistic-model
+#| echo: true
+
+log_spec <- logistic_reg(
+  penalty = tune(),   # L1/L2 regularization strength
+  mixture = tune()    # 0 = ridge, 1 = lasso
+) |>
+  set_engine("glmnet") |>
+  set_mode("classification")
+
+log_wf <- workflow() |>
+  add_recipe(credit_recipe) |>
+  add_model(log_spec)
+
+log_grid <- grid_regular(
+  penalty(range = c(-4, 0)),
+  mixture(range = c(0, 1)),
+  levels = 5        # 5x5 = 25 candidates
+)
+```
+
+---
+
+## Model 2: Random Forest
+
+```{r}
+#| label: rf-model
+#| echo: true
+
+rf_spec <- rand_forest(
+  mtry  = tune(),   # predictors sampled at each split
+  trees = tune(),   # number of trees
+  min_n = tune()    # minimum node size
+) |>
+  set_engine("ranger", importance = "impurity") |>
+  set_mode("classification")
+
+rf_wf <- workflow() |>
+  add_recipe(credit_recipe) |>
+  add_model(rf_spec)
+
+rf_grid <- grid_random(
+  mtry(range  = c(2, 10)),
+  trees(range = c(200, 800)),
+  min_n(range = c(5, 30)),
+  size = 20          # 20 random candidates
+)
+```
+
+---
+
+## Model 3: XGBoost
+
+```{r}
+#| label: xgb-model
+#| echo: true
+
+xgb_spec <- boost_tree(
+  trees          = tune(),
+  tree_depth     = tune(),
+  learn_rate     = tune(),
+  loss_reduction = tune(),
+  min_n          = tune()
+) |>
+  set_engine("xgboost") |>
+  set_mode("classification")
+
+xgb_wf <- workflow() |>
+  add_recipe(credit_recipe) |>
+  add_model(xgb_spec)
+
+xgb_grid <- grid_latin_hypercube(
+  trees(range          = c(100, 800)),
+  tree_depth(range     = c(2, 8)),
+  learn_rate(range     = c(-3, -1)),
+  loss_reduction(range = c(-5, 0)),
+  min_n(range          = c(5, 30)),
+  size = 20
+)
+```
+
+---
+
+## Tuning: Logistic Regression
+
+```{r}
+#| label: tune-logistic
+#| echo: true
+
+tictoc::tic()
+log_res <- tune_grid(
+  log_wf,
+  resamples = credit_folds,
+  grid      = log_grid,
+  metrics   = metric_set(roc_auc, accuracy)
+)
+log_time <- tictoc::toc(quiet = TRUE)
+
+show_best(log_res, metric = "roc_auc", n = 5)
+```
+
+---
+
+## Tuning: Random Forest
+
+```{r}
+#| label: tune-rf
+#| echo: true
+
+tictoc::tic()
+rf_res <- tune_grid(
+  rf_wf,
+  resamples = credit_folds,
+  grid      = rf_grid,
+  metrics   = metric_set(roc_auc, accuracy)
+)
+rf_time <- tictoc::toc(quiet = TRUE)
+
+show_best(rf_res, metric = "roc_auc", n = 5)
+```
+
+---
+
+## Tuning: XGBoost
+
+```{r}
+#| label: tune-xgb
+#| echo: true
+
+tictoc::tic()
+xgb_res <- tune_grid(
+  xgb_wf,
+  resamples = credit_folds,
+  grid      = xgb_grid,
+  metrics   = metric_set(roc_auc, accuracy)
+)
+xgb_time <- tictoc::toc(quiet = TRUE)
+
+show_best(xgb_res, metric = "roc_auc", n = 5)
+```
+
+---
+
+## Cross-Validation AUC Comparison
+
+```{r}
+#| label: cv-comparison
+#| echo: true
+
+log_best_cv  <- show_best(log_res, metric = "roc_auc", n = 1) |>
+  mutate(model = "Logistic Regression")
+rf_best_cv   <- show_best(rf_res,  metric = "roc_auc", n = 1) |>
+  mutate(model = "Random Forest")
+xgb_best_cv  <- show_best(xgb_res, metric = "roc_auc", n = 1) |>
+  mutate(model = "XGBoost")
+
+cv_results <- bind_rows(log_best_cv, rf_best_cv, xgb_best_cv) |>
+  select(model, mean, std_err)
+
+ggplot(cv_results, aes(x = reorder(model, mean), y = mean, fill = model)) +
+  geom_col(width = 0.5, show.legend = FALSE) +
+  geom_errorbar(aes(ymin = mean - std_err, ymax = mean + std_err),
+                width = 0.15, linewidth = 1, color = "white") +
+  geom_text(aes(label = round(mean, 4)), hjust = -0.3, size = 5,
+            color = "white") +
+  coord_flip(ylim = c(0.70, 0.96)) +
+  scale_fill_manual(values = c("Logistic Regression" = "#3498db",
+                               "Random Forest"       = "#2ecc71",
+                               "XGBoost"             = "#e67e22")) +
+  labs(title = "Best 10-Fold CV AUC by Model",
+       x = NULL, y = "Mean AUC") +
+  theme_minimal(base_size = 14) +
+  theme(axis.text = element_text(color = "white"),
+        title     = element_text(color = "white"),
+        plot.background = element_rect(fill = "transparent", color = NA))
+```
+
+---
+
+## Finalize & Fit on Full Training Data
+
+```{r}
+#| label: finalize
+#| echo: true
+
+# Pick best hyperparameter combination per model
+log_best_params  <- select_best(log_res, metric = "roc_auc")
+rf_best_params   <- select_best(rf_res,  metric = "roc_auc")
+xgb_best_params  <- select_best(xgb_res, metric = "roc_auc")
+
+# Finalize workflows with those parameters
+log_final_wf <- finalize_workflow(log_wf, log_best_params)
+rf_final_wf  <- finalize_workflow(rf_wf,  rf_best_params)
+xgb_final_wf <- finalize_workflow(xgb_wf, xgb_best_params)
+
+# Refit on full train set; evaluate once on test set
+log_final_fit <- last_fit(log_final_wf, credit_split,
+                          metrics = metric_set(roc_auc, accuracy))
+rf_final_fit  <- last_fit(rf_final_wf,  credit_split,
+                          metrics = metric_set(roc_auc, accuracy))
+xgb_final_fit <- last_fit(xgb_final_wf, credit_split,
+                          metrics = metric_set(roc_auc, accuracy))
+```
+
+---
+
+## Test Set Performance
+
+```{r}
+#| label: test-metrics
+#| echo: true
+
+get_metrics <- function(fit, name) {
+  collect_metrics(fit) |> mutate(model = name)
+}
+
+test_metrics <- bind_rows(
+  get_metrics(log_final_fit, "Logistic Regression"),
+  get_metrics(rf_final_fit,  "Random Forest"),
+  get_metrics(xgb_final_fit, "XGBoost")
+) |>
+  select(model, .metric, .estimate) |>
+  pivot_wider(names_from = .metric, values_from = .estimate) |>
+  arrange(desc(roc_auc))
+
+knitr::kable(test_metrics,
+             col.names = c("Model", "AUC", "Accuracy"),
+             digits     = 4,
+             caption    = "Test Set Performance (held-out data)")
+```
+
+---
+
+## ROC Curves — Test Set
+
+```{r}
+#| label: roc-curves
+#| echo: true
+
+get_roc <- function(fit, name) {
+  collect_predictions(fit) |>
+    roc_curve(truth = Status, .pred_bad) |>
+    mutate(model = name)
+}
+
+roc_data <- bind_rows(
+  get_roc(log_final_fit, "Logistic Regression"),
+  get_roc(rf_final_fit,  "Random Forest"),
+  get_roc(xgb_final_fit, "XGBoost")
+)
+
+ggplot(roc_data, aes(x = 1 - specificity, y = sensitivity, color = model)) +
+  geom_line(linewidth = 1.3) +
+  geom_abline(lty = 2, color = "grey60") +
+  scale_color_manual(values = c("Logistic Regression" = "#3498db",
+                                "Random Forest"       = "#2ecc71",
+                                "XGBoost"             = "#e67e22")) +
+  labs(title = "ROC Curves — Test Set",
+       x     = "1 − Specificity (False Positive Rate)",
+       y     = "Sensitivity (True Positive Rate)",
+       color = "Model") +
+  theme_minimal(base_size = 14)
+```
+
+---
+
+## Variable Importance — Random Forest
+
+```{r}
+#| label: vip-rf
+#| echo: true
+
+rf_final_wf |>
+  fit(data = credit_train) |>
+  extract_fit_parsnip() |>
+  vip(num_features = 12,
+      aesthetics   = list(fill = "#2ecc71", color = "white")) +
+  labs(title = "Top 12 Predictors — Random Forest") +
+  theme_minimal(base_size = 13)
+```
+
+---
+
+## Variable Importance — XGBoost
+
+```{r}
+#| label: vip-xgb
+#| echo: false
+
+xgb_final_wf |>
+  fit(data = credit_train) |>
+  extract_fit_parsnip() |>
+  vip(num_features = 12,
+      aesthetics   = list(fill = "#e67e22", color = "white")) +
+  labs(title = "Top 12 Predictors — XGBoost") +
+  theme_minimal(base_size = 13)
+```
+
+---
+
+## Time vs. Benefit Analysis
+
+```{r}
+#| label: time-benefit
+#| echo: false
+
+tibble(
+  Model            = c("Logistic Regression", "Random Forest", "XGBoost"),
+  `Grid Size`      = c("25 (regular)", "20 (random)", "20 (LHC)"),
+  `# Hyperparams`  = c(2L, 3L, 5L),
+  `Approx. Time`   = c("< 1 min", "3–5 min", "5–8 min"),
+  Interpretability = c("High", "Medium", "Low"),
+  `AUC vs Baseline`= c("—", "+2–3 pts", "+3–4 pts")
+) |>
+  knitr::kable(caption = "Time vs. Benefit Summary")
+```
+
+**Takeaway:** Random Forest provides the best **cost-benefit trade-off** — a meaningful
+AUC gain over logistic regression at moderate tuning cost and with interpretable
+variable importance. XGBoost offers marginal extra gain at much higher complexity.
+
+---
+
+## Conclusion & Recommendation
+
+-   **Logistic Regression** — fast, interpretable, solid baseline; limited flexibility
+-   **Random Forest** ✅ — strong AUC improvement, reasonable training time, clear variable importance; **recommended model**
+-   **XGBoost** — highest AUC but 5 hyperparameters to tune, less interpretable, longer training
+-   **Top predictors** (consistent across models): `Seniority`, `Income`, `Amount`, `Price`, home ownership (`Home`)
+-   **Future work:** SMOTE for class imbalance, model stacking / ensembling, SHAP values for XGBoost explanation

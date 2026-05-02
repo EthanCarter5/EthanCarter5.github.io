@@ -1,0 +1,16 @@
+---
+layout: single
+title: "Projects"
+permalink: /Projects/
+author_profile: true
+---
+
+## Projects
+
+<iframe 
+  src="https://mathr.appstate.edu/s/ae9f569349675efd8b8c5/p/2534c9d3/" 
+  width="100%" 
+  height="800px" 
+  frameborder="0"
+  allowfullscreen>
+</iframe>

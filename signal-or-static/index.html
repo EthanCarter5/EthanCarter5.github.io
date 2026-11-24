@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signal or Static</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a scoreboard header asks one question. Below it, one verdict per drill, read like a depth chart. Navy and red come from the Bear Ops app. */
+:root{
+  --bg:#0b1a33; --panel:#122a52; --navy:#18335f; --line:#2b4a7d;
+  --ink:#f4f7fb; --mute:#b4c2d6; --red:#c81029;
+  --g4:#2fbf71; --g3:#a8d86b; --g2:#f2b134; --g1:#ff6b78;
+  --disp:"Barlow Condensed","Arial Narrow",Arial,sans-serif; --body:"Barlow",Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.45}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px}
+header.sb{background:var(--navy);border-bottom:4px solid var(--red)}
+.sb .in{padding:14px 0 12px}
+.eyebrow{font:600 12px/1.2 var(--disp);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+h1{font:800 clamp(32px,8.5vw,46px)/1 var(--disp);text-transform:uppercase;margin:6px 0 8px;text-wrap:balance}
+.sub{font-size:17px;margin:0;max-width:46ch;color:#e6edf7}
+nav.tabs{display:flex;gap:6px}
+nav.tabs a{flex:1 1 0;text-align:center;text-decoration:none;color:var(--mute);font:700 18px/1 var(--disp);letter-spacing:.06em;text-transform:uppercase;padding:13px 6px 12px;border-radius:8px 8px 0 0;border-bottom:3px solid transparent}
+nav.tabs a[aria-current="page"]{color:#fff;background:var(--bg);border-bottom-color:var(--red)}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid #8cc2ff;outline-offset:2px}
+main{padding:18px 0 36px}
+section.view{display:none} section.view.on{display:block}
+h2{font:800 25px/1.05 var(--disp);text-transform:uppercase;letter-spacing:.02em;margin:24px 0 10px;display:flex;gap:10px;align-items:center}
+h2::before{content:"";width:6px;height:22px;background:var(--red);border-radius:2px;flex:none}
+p{margin:0 0 10px}
+.mute{color:var(--mute)}
+.answer{background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--g4);border-radius:10px;padding:14px}
+.answer .lead{font:800 27px/1.05 var(--disp);text-transform:uppercase;margin-bottom:6px}
+.answer p:last-child{margin:0;color:#e6edf7}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font:700 18px/1 var(--disp);letter-spacing:.05em;text-transform:uppercase;color:var(--ink);background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:10px 16px;cursor:pointer;min-height:44px}
+.chips button[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:#fff}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:12px 0 10px;font-size:14px;color:var(--mute);align-items:center}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.meter{display:inline-flex;gap:3px;vertical-align:middle}
+.meter i{width:10px;height:14px;border-radius:2px;background:#27406c}
+.meter i.on{background:var(--k)}
+.k4{--k:var(--g4)} .k3{--k:var(--g3)} .k2{--k:var(--g2)} .k1{--k:var(--g1)}
+details.row{background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--k);border-radius:10px;margin:0 0 8px}
+details.row[open]{background:#163260}
+details.row summary{list-style:none;cursor:pointer;padding:12px;display:flex;gap:10px;align-items:center;justify-content:space-between}
+details.row summary::-webkit-details-marker{display:none}
+.nm{font:700 21px/1.05 var(--disp);letter-spacing:.02em;text-transform:uppercase}
+.what{font-size:15px;color:var(--mute);margin-top:3px}
+.verdict{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;font:700 15px/1 var(--disp);letter-spacing:.05em;text-transform:uppercase;padding:7px 10px;border-radius:5px;color:#08152b;background:var(--k);white-space:nowrap}
+.more{padding:0 12px 12px;color:var(--mute);font-size:16px}
+.more p{margin:0 0 6px} .more b{color:var(--ink)}
+.callout{background:#1a2c4f;border:1px dashed var(--line);border-radius:10px;padding:12px 14px;margin-top:10px}
+.callout b{color:#fff}
+textarea{width:100%;font:500 15px/1.5 ui-monospace,Menlo,Consolas,monospace;color:var(--ink);background:#0d2243;border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;resize:vertical}
+input[type=text]{font:500 16px var(--body);color:var(--ink);background:#0d2243;border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;min-height:44px;width:88px}
+.btn{font:700 18px/1 var(--disp);letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--red);border:0;border-radius:8px;padding:13px 18px;min-height:46px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.alt{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.steps{list-style:none;counter-reset:s;margin:0 0 12px;padding:0;display:grid;gap:8px}
+.steps li{counter-increment:s;position:relative;padding-left:44px;min-height:32px}
+.steps li::before{content:counter(s);position:absolute;left:0;top:-1px;width:32px;height:32px;border-radius:50%;background:var(--red);color:#fff;font:800 18px/32px var(--disp);text-align:center}
+.result{margin-top:16px}
+.big{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.big .chip{font-size:26px;padding:10px 14px}
+.say{font-size:19px;margin:10px 0}
+.next{background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--k);border-radius:10px;padding:12px 14px;margin:10px 0}
+.next b{font:700 18px var(--disp);text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:3px}
+.warn{border-left:5px solid var(--g2);background:#2a2a1b;border-radius:6px;padding:10px 12px;margin:10px 0;font-size:16px}
+svg.sc{width:100%;max-width:400px;height:auto;display:block;margin:8px auto 0;background:#0d2243;border:1px solid var(--line);border-radius:10px}
+.nums{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.nums div{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px}
+.nums b{display:block;font:800 26px/1 var(--disp);font-variant-numeric:tabular-nums}
+.nums span{font-size:14px;color:var(--mute);display:block;margin-top:3px;line-height:1.25}
+details.plain{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-top:12px}
+details.plain summary{cursor:pointer;padding:12px 14px;font:700 18px var(--disp);letter-spacing:.04em;text-transform:uppercase}
+details.plain .body{padding:0 14px 12px;color:var(--mute)}
+details.plain ul{margin:0;padding-left:20px} details.plain li{margin-bottom:6px}
+.card2{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:12px}
+.card2 .lab{font:800 22px/1 var(--disp);text-transform:uppercase;letter-spacing:.03em;margin-bottom:10px}
+.card2 label{display:block;font:600 15px var(--body);color:var(--mute);margin:10px 0 4px}
+.card2 label .opt{font-weight:400}
+.card2 input[type=text]{width:100%;font-size:20px;min-height:50px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hint{font-size:15px;color:var(--mute);margin:10px 0 0}
+.banner{background:#2a2a1b;border-left:5px solid var(--g2);border-radius:6px;padding:8px 10px;font-size:15px;margin-bottom:6px}
+.err{color:var(--g1);font-weight:600;min-height:22px;margin:6px 0 2px}
+.btn.full{width:100%;font-size:20px;min-height:52px}
+.prog .t{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;font-size:16px}
+.bar{position:relative;height:10px;background:#27406c;border-radius:5px;margin:8px 0 12px}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:var(--red)}
+.bar b{position:absolute;top:-3px;width:2px;height:16px;background:#fff;opacity:.6}
+#plist{max-height:236px;overflow-y:auto;border:1px solid var(--line);border-radius:8px}
+#plist .empty{padding:12px;color:var(--mute)}
+#plist .pr{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 12px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+#plist .pr:last-child{border-bottom:0}
+#plist .pr .nme{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#plist .pr .vals{color:var(--mute)}
+#plist .pr button{background:transparent;border:0;color:var(--mute);font-size:20px;min-width:44px;min-height:44px;cursor:pointer;border-radius:6px}
+#plist .pr button:hover{color:var(--g1)}
+footer{border-top:1px solid var(--line);padding:14px 0 28px;color:var(--mute);font-size:13px}
+@media (max-width:420px){ .nm{font-size:19px} .chip{font-size:14px} }
+</style>
+</head>
+<body>
+<header class="sb">
+  <div class="wrap">
+    <div class="in">
+      <div class="eyebrow">Signal or Static? &middot; NFL Big Data Bowl 2027 &middot; Combine tracking</div>
+      <h1>Can you trust this Combine number?</h1>
+      <p class="sub">We had players run each drill twice. If the second run matches the first, the number is real. If it doesn't, it's luck.</p>
+    </div>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#numbers" data-v="numbers">Combine numbers</a>
+      <a href="#test" data-v="test">Test a drill</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section class="view" id="v-numbers" aria-label="Combine numbers">
+  <div class="answer" id="answer"></div>
+
+  <h2>Pick a position</h2>
+  <div class="chips" id="posChips" role="group" aria-label="Position"></div>
+  <div class="legend" aria-hidden="true" id="legend"></div>
+  <div id="rows"></div>
+  <div class="callout" id="callout" hidden></div>
+  <p class="mute" style="font-size:14px;margin-top:12px">Tap a drill for the numbers behind its verdict. A drill shows up only if 20 or more players ran it twice.</p>
+</section>
+
+<section class="view" id="v-test" aria-label="Test a drill">
+  <h2>Is your drill repeatable?</h2>
+  <div class="answer" style="border-left-color:var(--red)">
+    <div class="lead" style="font-size:22px">This checks one thing: does the same player get the same number twice?</div>
+    <p>If yes, the drill gives a real number and you can compare players with it. If no, you're ranking players on luck. It does not tell you who is good or whether the drill predicts the NFL.</p>
+    <p><b style="color:#fff">Example:</b> 20 players run a shuttle twice. For each player you enter his time from run 1 and from run 2. That's all.</p>
+  </div>
+
+  <div class="card2">
+    <div class="lab">1. What are you measuring?</div>
+    <div class="chips" id="mChips" role="group" aria-label="What you are measuring"></div>
+    <div id="otherBox" hidden style="margin-top:8px"><label for="unit">Unit (for example sec, yd, mph)</label><input type="text" id="unit" value="" maxlength="8" style="width:110px"></div>
+    <p class="hint" id="mHint"></p>
+  </div>
+
+  <div class="card2">
+    <div class="lab">2. Add a player, with both of his runs</div>
+    <div class="banner" id="banner">Showing a made-up example. Add your first player and it clears.</div>
+    <form id="addForm" novalidate autocomplete="off">
+      <label for="fn">Player <span class="opt">(optional)</span></label>
+      <input type="text" id="fn" placeholder="Name or number" maxlength="40" enterkeyhint="next">
+      <div class="two">
+        <div><label for="fa">First run</label><input type="text" id="fa" inputmode="decimal" enterkeyhint="next"></div>
+        <div><label for="fb">Second run</label><input type="text" id="fb" inputmode="decimal" enterkeyhint="done"></div>
+      </div>
+      <div class="err" id="err" role="alert"></div>
+      <button class="btn full" type="submit">Add player</button>
+    </form>
+  </div>
+
+  <div class="card2">
+    <div class="lab">3. Your players</div>
+    <div class="prog" id="prog"></div>
+    <div id="plist"></div>
+    <div class="ctrl">
+      <button class="btn alt" id="clr" type="button">Clear all</button>
+      <button class="btn alt" id="ex" type="button">Load example</button>
+    </div>
+    <details class="plain" style="margin-top:12px">
+      <summary>Paste a list instead</summary>
+      <div class="body">
+        <p>One player per line: name, first run, second run. Names are optional.</p>
+        <textarea id="paste" rows="5" spellcheck="false" placeholder="Smith, 10.22, 10.12&#10;Jones, 10.35, 10.28"></textarea>
+        <div class="ctrl"><button class="btn" id="padd" type="button">Add these players</button><span id="pmsg" class="mute" role="status"></span></div>
+      </div>
+    </details>
+  </div>
+
+  <h2>Verdict</h2>
+  <div class="result" id="result" aria-live="polite"></div>
+
+  <details class="plain">
+    <summary>What makes a drill trustworthy</summary>
+    <div class="body"><ul>
+      <li><b>Stops last half a second or more.</b> The trackers record 10 times a second, so shorter stops are only 2 or 3 frames and read too low.</li>
+      <li><b>Start on a cue,</b> like the snap, not when the player decides to go. Snap starts and self-starts give different get-off times.</li>
+      <li><b>Run each player at least twice,</b> same day, same setup. One run can't be checked.</li>
+      <li><b>Test with 20 or more players</b> before you trust the verdict.</li>
+      <li><b>Measure top speed where the player runs straight and free.</b> The 40's top speed repeats at 88% to 94% at every position. Stops and turns inside short, curved or contact drills repeat much less.</li>
+    </ul></div>
+  </details>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    Data: NFL Big Data Bowl 2027 Combine tracking. Each verdict comes from Signal Share, the share of the differences between players that is real (a one-way intraclass correlation across players with 2+ reps; 95% ranges from 1,000 bootstrap resamples). Trust it at 80% or more, mostly trust at 60%, use with caution at 40%, don't use below that. A real number can still fail to predict the NFL, but a noisy one can't. This page holds drill-level results only. Student entry, not an NFL product.
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+var DATA = [{"drill": "40-yard dash", "grp": "DB", "gl": "DB", "m": "Top speed", "ss": 0.91, "lo": 0.87, "hi": 0.94, "band": 0.152, "avg": 0.95, "reps": 2.0, "n": 90}, {"drill": "Back-pedal and 45-degree reaction", "grp": "DB", "gl": "DB", "m": "Peak braking", "ss": 0.78, "lo": 0.71, "hi": 0.84, "band": 1.739, "avg": 0.88, "reps": 2.0, "n": 115}, {"drill": "Line drill", "grp": "DB", "gl": "DB", "m": "Top speed", "ss": 0.5, "lo": 0.34, "hi": 0.64, "band": 0.79, "avg": 0.66, "reps": 2.0, "n": 95}, {"drill": "40-yard dash", "grp": "DB", "gl": "DB", "m": "Peak braking", "ss": 0.48, "lo": 0.32, "hi": 0.65, "band": 0.322, "avg": 0.65, "reps": 2.0, "n": 90}, {"drill": "Back-pedal and 45-degree reaction", "grp": "DB", "gl": "DB", "m": "Peak acceleration", "ss": 0.38, "lo": 0.22, "hi": 0.5, "band": 0.975, "avg": 0.55, "reps": 2.0, "n": 115}, {"drill": "40-yard dash", "grp": "DB", "gl": "DB", "m": "Peak acceleration", "ss": 0.3, "lo": 0.04, "hi": 0.53, "band": 0.98, "avg": 0.46, "reps": 2.0, "n": 90}, {"drill": "Back-pedal and 45-degree reaction", "grp": "DB", "gl": "DB", "m": "Top speed", "ss": 0.2, "lo": 0.02, "hi": 0.35, "band": 0.603, "avg": 0.33, "reps": 2.0, "n": 115}, {"drill": "Line drill", "grp": "DB", "gl": "DB", "m": "Peak acceleration", "ss": 0.1, "lo": -0.07, "hi": 0.29, "band": 1.129, "avg": 0.18, "reps": 2.0, "n": 95}, {"drill": "Line drill", "grp": "DB", "gl": "DB", "m": "Peak braking", "ss": -0.26, "lo": -0.39, "hi": -0.11, "band": 1.575, "avg": -0.72, "reps": 2.0, "n": 95}, {"drill": "40-yard dash", "grp": "EDGE", "gl": "Edge", "m": "Top speed", "ss": 0.94, "lo": 0.86, "hi": 0.97, "band": 0.17, "avg": 0.97, "reps": 2.0, "n": 46}, {"drill": "40-yard dash", "grp": "EDGE", "gl": "Edge", "m": "Peak braking", "ss": 0.58, "lo": 0.33, "hi": 0.72, "band": 0.294, "avg": 0.73, "reps": 2.0, "n": 46}, {"drill": "40-yard dash", "grp": "EDGE", "gl": "Edge", "m": "Peak acceleration", "ss": 0.56, "lo": 0.33, "hi": 0.72, "band": 0.797, "avg": 0.72, "reps": 2.0, "n": 46}, {"drill": "Pass rush drill", "grp": "EDGE", "gl": "Edge", "m": "Top speed", "ss": 0.36, "lo": 0.07, "hi": 0.66, "band": 0.661, "avg": 0.53, "reps": 2.0, "n": 59}, {"drill": "Pass rush drill", "grp": "EDGE", "gl": "Edge", "m": "Peak braking", "ss": 0.29, "lo": 0.01, "hi": 0.5, "band": 0.848, "avg": 0.45, "reps": 2.0, "n": 59}, {"drill": "Pass rush drill", "grp": "EDGE", "gl": "Edge", "m": "Peak acceleration", "ss": 0.28, "lo": 0.08, "hi": 0.45, "band": 0.781, "avg": 0.44, "reps": 2.0, "n": 59}, {"drill": "Short zone breaks", "grp": "EDGE", "gl": "Edge", "m": "Top speed", "ss": 0.17, "lo": -0.07, "hi": 0.36, "band": 1.514, "avg": 0.38, "reps": 3.0, "n": 37}, {"drill": "Short zone breaks", "grp": "EDGE", "gl": "Edge", "m": "Peak acceleration", "ss": 0.0, "lo": -0.15, "hi": 0.16, "band": 1.001, "avg": 0.01, "reps": 3.0, "n": 37}, {"drill": "Short zone breaks", "grp": "EDGE", "gl": "Edge", "m": "Peak braking", "ss": -0.14, "lo": -0.27, "hi": -0.02, "band": 3.188, "avg": -0.59, "reps": 3.0, "n": 37}, {"drill": "40-yard dash", "grp": "INTERIOR", "gl": "Interior DL", "m": "Top speed", "ss": 0.92, "lo": 0.87, "hi": 0.96, "band": 0.175, "avg": 0.96, "reps": 2.0, "n": 38}, {"drill": "Pass rush drill", "grp": "INTERIOR", "gl": "Interior DL", "m": "Top speed", "ss": 0.74, "lo": 0.55, "hi": 0.85, "band": 0.349, "avg": 0.85, "reps": 2.0, "n": 47}, {"drill": "40-yard dash", "grp": "INTERIOR", "gl": "Interior DL", "m": "Peak acceleration", "ss": 0.54, "lo": 0.29, "hi": 0.78, "band": 0.602, "avg": 0.7, "reps": 2.0, "n": 38}, {"drill": "Pass rush drill", "grp": "INTERIOR", "gl": "Interior DL", "m": "Peak braking", "ss": 0.37, "lo": 0.11, "hi": 0.67, "band": 0.935, "avg": 0.54, "reps": 2.0, "n": 47}, {"drill": "40-yard dash", "grp": "INTERIOR", "gl": "Interior DL", "m": "Peak braking", "ss": 0.34, "lo": 0.04, "hi": 0.54, "band": 0.381, "avg": 0.51, "reps": 2.0, "n": 38}, {"drill": "Pass rush drill", "grp": "INTERIOR", "gl": "Interior DL", "m": "Peak acceleration", "ss": 0.06, "lo": -0.22, "hi": 0.31, "band": 0.79, "avg": 0.11, "reps": 2.0, "n": 47}, {"drill": "40-yard dash", "grp": "OL", "gl": "OL", "m": "Top speed", "ss": 0.92, "lo": 0.87, "hi": 0.95, "band": 0.183, "avg": 0.96, "reps": 2.0, "n": 84}, {"drill": "40-yard dash", "grp": "OL", "gl": "OL", "m": "Peak acceleration", "ss": 0.54, "lo": 0.35, "hi": 0.7, "band": 0.985, "avg": 0.71, "reps": 2.0, "n": 84}, {"drill": "40-yard dash", "grp": "OL", "gl": "OL", "m": "Peak braking", "ss": 0.38, "lo": 0.23, "hi": 0.54, "band": 0.38, "avg": 0.55, "reps": 2.0, "n": 84}, {"drill": "Pass rush drop", "grp": "OL", "gl": "OL", "m": "Top speed", "ss": 0.32, "lo": 0.12, "hi": 0.48, "band": 0.665, "avg": 0.49, "reps": 2.0, "n": 118}, {"drill": "Pass rush drop", "grp": "OL", "gl": "OL", "m": "Peak acceleration", "ss": 0.17, "lo": -0.01, "hi": 0.32, "band": 0.847, "avg": 0.29, "reps": 2.0, "n": 118}, {"drill": "Pass rush drop", "grp": "OL", "gl": "OL", "m": "Peak braking", "ss": -0.44, "lo": -0.6, "hi": -0.26, "band": 2.292, "avg": -1.61, "reps": 2.0, "n": 118}, {"drill": "40-yard dash", "grp": "TE", "gl": "TE", "m": "Top speed", "ss": 0.93, "lo": 0.85, "hi": 0.97, "band": 0.143, "avg": 0.96, "reps": 2.0, "n": 32}, {"drill": "Gauntlet", "grp": "TE", "gl": "TE", "m": "Top speed", "ss": 0.7, "lo": 0.51, "hi": 0.82, "band": 0.345, "avg": 0.82, "reps": 2.0, "n": 40}, {"drill": "Gauntlet", "grp": "TE", "gl": "TE", "m": "Peak braking", "ss": 0.7, "lo": 0.33, "hi": 0.85, "band": 0.827, "avg": 0.82, "reps": 2.0, "n": 40}, {"drill": "40-yard dash", "grp": "TE", "gl": "TE", "m": "Peak braking", "ss": 0.52, "lo": 0.18, "hi": 0.72, "band": 0.292, "avg": 0.68, "reps": 2.0, "n": 32}, {"drill": "Corner route", "grp": "TE", "gl": "TE", "m": "Top speed", "ss": 0.39, "lo": 0.01, "hi": 0.68, "band": 0.431, "avg": 0.57, "reps": 2.1, "n": 28}, {"drill": "40-yard dash", "grp": "TE", "gl": "TE", "m": "Peak acceleration", "ss": 0.24, "lo": -0.07, "hi": 0.5, "band": 0.899, "avg": 0.39, "reps": 2.0, "n": 32}, {"drill": "Gauntlet", "grp": "TE", "gl": "TE", "m": "Peak acceleration", "ss": 0.16, "lo": -0.19, "hi": 0.44, "band": 0.477, "avg": 0.27, "reps": 2.0, "n": 40}, {"drill": "Corner route", "grp": "TE", "gl": "TE", "m": "Peak acceleration", "ss": 0.04, "lo": -0.38, "hi": 0.46, "band": 0.747, "avg": 0.08, "reps": 2.1, "n": 28}, {"drill": "Corner route", "grp": "TE", "gl": "TE", "m": "Peak braking", "ss": -0.15, "lo": -0.37, "hi": 0.12, "band": 2.117, "avg": -0.37, "reps": 2.1, "n": 28}, {"drill": "40-yard dash", "grp": "WR", "gl": "WR", "m": "Top speed", "ss": 0.88, "lo": 0.8, "hi": 0.93, "band": 0.18, "avg": 0.94, "reps": 2.0, "n": 81}, {"drill": "Gauntlet", "grp": "WR", "gl": "WR", "m": "Peak braking", "ss": 0.62, "lo": 0.45, "hi": 0.76, "band": 1.287, "avg": 0.77, "reps": 2.0, "n": 92}, {"drill": "Gauntlet", "grp": "WR", "gl": "WR", "m": "Top speed", "ss": 0.61, "lo": 0.45, "hi": 0.72, "band": 0.399, "avg": 0.76, "reps": 2.0, "n": 92}, {"drill": "40-yard dash", "grp": "WR", "gl": "WR", "m": "Peak braking", "ss": 0.5, "lo": 0.25, "hi": 0.69, "band": 0.292, "avg": 0.67, "reps": 2.0, "n": 81}, {"drill": "Gauntlet", "grp": "WR", "gl": "WR", "m": "Peak acceleration", "ss": 0.43, "lo": 0.23, "hi": 0.58, "band": 0.445, "avg": 0.6, "reps": 2.0, "n": 92}, {"drill": "40-yard dash", "grp": "WR", "gl": "WR", "m": "Peak acceleration", "ss": -0.08, "lo": -0.27, "hi": 0.29, "band": 1.427, "avg": -0.17, "reps": 2.0, "n": 81}];
+var EXAMPLE = [["Player 1", 10.22, 10.12], ["Player 2", 10.35, 10.28], ["Player 3", 9.86, 10.14], ["Player 4", 9.81, 9.78], ["Player 5", 10.24, 9.96], ["Player 6", 9.48, 9.55], ["Player 7", 10.38, 10.22], ["Player 8", 10.82, 10.72], ["Player 9", 9.86, 10.19], ["Player 10", 10.28, 10.04], ["Player 11", 10.56, 10.42], ["Player 12", 10.14, 10.48], ["Player 13", 10.26, 10.19], ["Player 14", 9.89, 9.97], ["Player 15", 10.15, 10.19], ["Player 16", 10.64, 10.62], ["Player 17", 9.58, 9.36], ["Player 18", 10.11, 10.06], ["Player 19", 9.6, 9.04], ["Player 20", 9.5, 9.25], ["Player 21", 9.41, 9.32], ["Player 22", 10.01, 9.93], ["Player 23", 9.65, 9.66], ["Player 24", 10.11, 10.73], ["Player 25", 10.17, 10.12], ["Player 26", 10.08, 10], ["Player 27", 9.23, 9.1], ["Player 28", 10.16, 10.05], ["Player 29", 9.94, 10.15], ["Player 30", 10.11, 10.21], ["Player 31", 9.63, 9.64], ["Player 32", 9.63, 10.08], ["Player 33", 9.68, 9.57], ["Player 34", 9.82, 9.82], ["Player 35", 10.9, 10.68], ["Player 36", 9.96, 9.65], ["Player 37", 10.13, 10.23], ["Player 38", 10.53, 10.44], ["Player 39", 9.89, 10.11], ["Player 40", 10.42, 10.18]];
+var GRADES = [
+  {lo:-1,  name:"Don't use it",     k:"k1", n:1, icon:"✕", line:"Changes about as much from run to run as from player to player."},
+  {lo:0.4, name:"Use with caution", k:"k2", n:2, icon:"▲", line:"Changes some from run to run. Use it as one input, never alone."},
+  {lo:0.6, name:"Mostly trust it",  k:"k3", n:3, icon:"●", line:"Mostly the same both times. Fine to use."},
+  {lo:0.8, name:"Trust it",         k:"k4", n:4, icon:"✓", line:"The same both times. Safe to use."}
+];
+var MEAS={"Top speed":"Top speed","Peak acceleration":"Burst (acceleration)","Peak braking":"Hardest stop (braking)"};
+function grade(x){ var v=Math.max(x,-1), g=GRADES[0]; for(var i=0;i<GRADES.length;i++){ if(v>=GRADES[i].lo) g=GRADES[i]; } return g; }
+function pct(x){ return Math.round(x*100)+"%"; }
+function el(tag,cls,txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
+function chip(g){ return el("span","chip "+g.k,g.icon+" "+g.name); }
+function meter(g){ var m=el("span","meter "+g.k); m.setAttribute("aria-hidden","true"); for(var i=1;i<=4;i++){ m.appendChild(el("i",i<=g.n?"on":"")); } return m; }
+
+/* routing */
+var VIEWS=["numbers","test"];
+function route(){
+  var h=(location.hash||"").replace("#",""); if(VIEWS.indexOf(h)<0) h="numbers";
+  VIEWS.forEach(function(v){
+    document.getElementById("v-"+v).classList.toggle("on",v===h);
+    var a=document.querySelector('nav.tabs a[data-v="'+v+'"]');
+    if(v===h) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current");
+  });
+}
+window.addEventListener("hashchange",route); route();
+
+/* numbers tab */
+var POS=[["Edge","EDGE"],["Interior DL","INTERIOR"],["DB","DB"],["OL","OL"],["TE","TE"],["WR","WR"]];
+var state={pos:"EDGE"};
+function answer(){
+  var box=document.getElementById("answer"); box.textContent="";
+  var bad=DATA.filter(function(r){return grade(r.ss).n===1;}).length;
+  var fortyOK=DATA.filter(function(r){return r.drill==="40-yard dash"&&r.m==="Top speed";});
+  var lo=Math.min.apply(null,fortyOK.map(function(r){return r.ss;})), hi=Math.max.apply(null,fortyOK.map(function(r){return r.ss;}));
+  box.appendChild(el("div","lead","The 40-yard dash top speed is the one number you can trust everywhere."));
+  box.appendChild(el("p",null,"It comes out almost the same on a second run at every position ("+pct(lo)+" to "+pct(hi)+" the player). Most of the other drill numbers don't: "+bad+" of the "+DATA.length+" we graded are mostly luck."));
+}
+function legend(){
+  var l=document.getElementById("legend"); l.textContent="";
+  GRADES.slice().reverse().forEach(function(g){ var s=el("span"); s.appendChild(meter(g)); s.appendChild(document.createTextNode(g.name)); l.appendChild(s); });
+}
+function chips(){
+  var box=document.getElementById("posChips"); box.textContent="";
+  POS.forEach(function(p){
+    var b=el("button",null,p[0]); b.type="button"; b.setAttribute("aria-pressed",String(state.pos===p[1]));
+    b.addEventListener("click",function(){ state.pos=p[1]; chips(); rows(); });
+    box.appendChild(b);
+  });
+}
+function unitOf(m){ return m==="Top speed" ? "yd/s" : "yd/s²"; }
+function rows(){
+  var list=DATA.filter(function(r){return r.grp===state.pos;}).sort(function(a,b){return b.ss-a.ss;});
+  var box=document.getElementById("rows"); box.textContent="";
+  list.forEach(function(r){
+    var g=grade(r.ss), d=el("details","row "+g.k), s=el("summary");
+    var left=el("div"); left.appendChild(el("div","nm",r.drill)); left.appendChild(el("div","what",MEAS[r.m]));
+    var v=el("div","verdict"); v.appendChild(chip(g)); v.appendChild(meter(g));
+    s.appendChild(left); s.appendChild(v); d.appendChild(s);
+    var more=el("div","more");
+    more.appendChild(el("p",null,g.line));
+    var p1=el("p"); p1.innerHTML="<b>The numbers:</b> "; p1.appendChild(document.createTextNode(pct(r.ss)+" of what you see is the player (likely "+pct(r.lo)+" to "+pct(r.hi)+"). Two runs of the same player usually land within ±"+r.band.toFixed(2)+" "+unitOf(r.m)+" of each other. "+r.n+" players ran it twice."));
+    more.appendChild(p1);
+    d.appendChild(more); box.appendChild(d);
+  });
+  var c=document.getElementById("callout");
+  function get(g){ return DATA.filter(function(r){return r.drill==="Pass rush drill"&&r.grp===g&&r.m==="Top speed";})[0]; }
+  if(state.pos==="EDGE"||state.pos==="INTERIOR"){
+    var e=get("EDGE"), i=get("INTERIOR"); c.textContent="";
+    var b=el("b",null,"Pass rushers: "); c.appendChild(b);
+    c.appendChild(document.createTextNode("in the pass rush drill, interior linemen repeat their top speed ("+pct(i.ss)+" the player) and edge rushers don't ("+pct(e.ss)+"). Same drill, two answers."));
+    c.hidden=false;
+  } else c.hidden=true;
+}
+
+/* math */
+function lgamma(x){ var c=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5]; var y=x,t=x+5.5; t-=(x+0.5)*Math.log(t); var s=1.000000000190015; for(var j=0;j<6;j++){ y+=1; s+=c[j]/y; } return -t+Math.log(2.5066282746310005*s/x); }
+function betacf(a,b,x){ var MAXIT=300,EPS=3e-12,FPMIN=1e-300,qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap; if(Math.abs(d)<FPMIN) d=FPMIN; d=1/d; var h=d; for(var m=1;m<=MAXIT;m++){ var m2=2*m,aa=m*(b-m)*x/((qam+m2)*(a+m2)); d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN; c=1+aa/c; if(Math.abs(c)<FPMIN)c=FPMIN; d=1/d; h*=d*c; aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2)); d=1+aa*d; if(Math.abs(d)<FPMIN)d=FPMIN; c=1+aa/c; if(Math.abs(c)<FPMIN)c=FPMIN; d=1/d; var del=d*c; h*=del; if(Math.abs(del-1)<EPS) break; } return h; }
+function ibeta(x,a,b){ if(x<=0) return 0; if(x>=1) return 1; var bt=Math.exp(lgamma(a+b)-lgamma(a)-lgamma(b)+a*Math.log(x)+b*Math.log(1-x)); return x<(a+1)/(a+b+2) ? bt*betacf(a,b,x)/a : 1-bt*betacf(b,a,1-x)/b; }
+function fcdf(x,d1,d2){ return ibeta(d1*x/(d1*x+d2),d1/2,d2/2); }
+function fq(p,d1,d2){ var lo=0,hi=1; while(fcdf(hi,d1,d2)<p) hi*=2; for(var i=0;i<80;i++){ var mid=(lo+hi)/2; if(fcdf(mid,d1,d2)<p) lo=mid; else hi=mid; } return (lo+hi)/2; }
+function parse(text){
+  var out=[];
+  text.split(/\r?\n/).forEach(function(line){
+    line=line.trim(); if(!line) return;
+    var f=line.split(/[\t,;]+/).map(function(s){return s.trim();}).filter(Boolean);
+    if(f.length<2) f=line.split(/\s+/);
+    if(f.length<2) return;
+    var A=f[f.length-2], B=f[f.length-1], a=parseFloat(A), b=parseFloat(B);
+    if(isFinite(a)&&isFinite(b)&&/^[-+]?[\d.]/.test(A)&&/^[-+]?[\d.]/.test(B)) out.push([a,b]);
+  });
+  return out;
+}
+function stats(pairs){
+  var n=pairs.length; if(n<3) return {n:n};
+  var means=pairs.map(function(p){return (p[0]+p[1])/2;});
+  var gm=means.reduce(function(a,b){return a+b;},0)/n;
+  var msb=2*means.reduce(function(a,m){return a+(m-gm)*(m-gm);},0)/(n-1);
+  var msw=pairs.reduce(function(a,p){return a+(p[0]-p[1])*(p[0]-p[1]);},0)/(2*n);
+  var o={n:n,msb:msb,msw:msw};
+  if(msb+msw<=0||msw<=0) return o;
+  o.icc=(msb-msw)/(msb+msw); o.avg=Math.max((msb-msw)/msb,-1); o.band=1.28*Math.sqrt(2*msw);
+  var F=msb/msw;
+  if(n>=5){ var FL=F/fq(0.975,n-1,n), FU=F*fq(0.975,n,n-1); o.lo=(FL-1)/(FL+1); o.hi=(FU-1)/(FU+1); }
+  var md=pairs.reduce(function(a,p){return a+(p[1]-p[0]);},0)/n; o.shift=md; o.z=md*Math.sqrt(n)/Math.sqrt(2*msw);
+  return o;
+}
+function repsNeeded(r,t){ if(r>=t) return 1; if(r<=0.05) return null; return Math.ceil(t*(1-r)/(r*(1-t))); }
+
+/* test tab */
+function scatter(pairs){
+  var NS="http://www.w3.org/2000/svg", all=[]; pairs.forEach(function(p){all.push(p[0],p[1]);});
+  var mn=Math.min.apply(null,all), mx=Math.max.apply(null,all), pad=(mx-mn)*0.08||1; mn-=pad; mx+=pad;
+  var W=360,H=340,L=44,B=40,T=12,R=14;
+  function X(v){return L+(v-mn)/(mx-mn)*(W-L-R);} function Y(v){return H-B-(v-mn)/(mx-mn)*(H-B-T);}
+  var svg=document.createElementNS(NS,"svg"); svg.setAttribute("viewBox","0 0 "+W+" "+H); svg.setAttribute("class","sc"); svg.setAttribute("role","img");
+  svg.setAttribute("aria-label","First run against second run for each player. Dots on the dashed line mean the player repeated himself.");
+  function add(t,a,txt){ var e=document.createElementNS(NS,t); for(var k in a) e.setAttribute(k,a[k]); if(txt!=null) e.textContent=txt; svg.appendChild(e); return e; }
+  var FT={fill:"#b4c2d6","font-size":12,"font-family":"Barlow,Arial,sans-serif"};
+  for(var i=0;i<=4;i++){ var v=mn+(mx-mn)*i/4;
+    add("line",{x1:L,x2:W-R,y1:Y(v),y2:Y(v),stroke:"#2b4a7d",opacity:.5}); add("line",{x1:X(v),x2:X(v),y1:T,y2:H-B,stroke:"#2b4a7d",opacity:.5});
+    add("text",Object.assign({x:X(v),y:H-B+16,"text-anchor":"middle"},FT),v.toFixed(1)); add("text",Object.assign({x:L-6,y:Y(v)+4,"text-anchor":"end"},FT),v.toFixed(1)); }
+  add("line",{x1:X(mn),y1:Y(mn),x2:X(mx),y2:Y(mx),stroke:"#fff","stroke-width":1.5,"stroke-dasharray":"5 4",opacity:.75});
+  pairs.forEach(function(p){ add("circle",{cx:X(p[0]),cy:Y(p[1]),r:4.5,fill:"#ff6b78","fill-opacity":.8,stroke:"#fff","stroke-width":1}); });
+  var TT={fill:"#f4f7fb","font-size":13,"font-weight":600,"font-family":"Barlow,Arial,sans-serif"};
+  add("text",Object.assign({x:(L+W-R)/2,y:H-6,"text-anchor":"middle"},TT),"First run");
+  add("text",Object.assign({x:12,y:(T+H-B)/2,"text-anchor":"middle",transform:"rotate(-90 12 "+((T+H-B)/2)+")"},TT),"Second run");
+  return svg;
+}
+function num(box,big,small){ var d=el("div"); d.appendChild(el("b",null,big)); d.appendChild(el("span",null,small)); box.appendChild(d); }
+function check(){
+  var res=document.getElementById("result"); res.textContent="";
+  var unit=UNIT;
+  var pairs=PL.map(function(p){return [p.a,p.b];}), s=stats(pairs);
+  live(null);
+  if(pairs.length<3){ res.appendChild(el("p","mute","Add "+(3-pairs.length)+" more player"+(3-pairs.length===1?"":"s")+" to see a first verdict.")); return; }
+  if(s.icc==null){ res.appendChild(el("p","warn","Every player ran the same both times, or there is no spread between players. Check what you pasted.")); return; }
+  var g=grade(s.icc); live(g);
+  var big=el("div","big "+g.k); big.appendChild(chip(g)); big.appendChild(meter(g)); res.appendChild(big);
+  res.appendChild(el("p","say",g.line+(s.icc<0?" It is worse than luck: a player's own two runs differ more than players differ.":"")));
+  if(s.n<20) res.appendChild(el("p","warn","Only "+s.n+" players. Under 20 is a rough read."));
+  if(Math.abs(s.z)>2) res.appendChild(el("p","warn","Second runs came out "+(s.shift>0?"higher":"lower")+" than first runs by "+Math.abs(s.shift).toFixed(2)+" "+unit+" on average. That means warm-up, fatigue or learning is getting in. Fix the setup first."));
+  var nx=el("div","next "+g.k), t=el("b",null,"What to do"); nx.appendChild(t);
+  var need=repsNeeded(s.icc,0.8), txt;
+  if(g.n===4) txt="Use it. Next, check whether it predicts what you care about.";
+  else if(g.n===3) txt="Use it, and treat players who are close together as tied.";
+  else if(need!=null&&need<=8) txt="Don't rank players on one run. Run each player "+need+" times and use the average, or change the drill.";
+  else txt="Change the drill before you use it: make stops last half a second or more, start on a cue, and keep the path straight. Running it more times won't fix it.";
+  nx.appendChild(document.createTextNode(txt)); res.appendChild(nx);
+  res.appendChild(scatter(pairs));
+  res.appendChild(el("p","mute","Each dot is a player. On the dashed line means he did the same both times. A cloud means luck.")); res.lastChild.style.cssText="font-size:15px;margin-top:8px";
+  var d=el("details","plain"); d.appendChild(el("summary",null,"Show the numbers"));
+  var body=el("div","body"), nums=el("div","nums");
+  num(nums,pct(s.icc),"of what you see is the player"+(s.lo!=null?" (likely "+pct(s.lo)+" to "+pct(s.hi)+")":""));
+  num(nums,"±"+s.band.toFixed(2)+" "+unit,"8 in 10 second runs land this close to the first");
+  num(nums,pct(s.avg),"if you average the two runs");
+  num(nums,Math.sqrt(Math.max(s.icc,0)).toFixed(2),"highest link this number can have with any outcome");
+  body.appendChild(nums); d.appendChild(body); res.appendChild(d);
+}
+var PL=[], example=true, UNIT="yd/s", MKEY="speed";
+var MEASURES=[
+  {k:"speed",label:"Top speed",unit:"yd/s",hint:"Enter the fastest speed in each run, in yards per second (tracking gives this). Example: 10.22"},
+  {k:"time",label:"Time",unit:"sec",hint:"Enter the time of each run in seconds. Lower is better, but the check works the same. Example: 4.62"},
+  {k:"other",label:"Other",unit:"",hint:"Enter any measure, the same way both runs. Type its unit below."}
+];
+function mchips(){
+  var box=document.getElementById("mChips"); box.textContent="";
+  MEASURES.forEach(function(m){
+    var b=el("button",null,m.label); b.type="button"; b.setAttribute("aria-pressed",String(MKEY===m.k));
+    b.addEventListener("click",function(){ MKEY=m.k; UNIT=m.k==="other"?(document.getElementById("unit").value||""):m.unit; if(example){ PL=[]; example=false; } mchips(); render(); });
+    box.appendChild(b);
+  });
+  var cur=MEASURES.filter(function(m){return m.k===MKEY;})[0];
+  document.getElementById("mHint").textContent=cur.hint;
+  document.getElementById("otherBox").hidden=MKEY!=="other";
+}
+var liveG=null;
+function live(g){ liveG=g; var s=document.getElementById("liveChip"); if(!s) return; s.textContent=""; if(g){ s.appendChild(chip(g)); if(PL.length<20){ var r=el("span","mute"," rough"); r.style.fontSize="14px"; s.appendChild(r); } } else s.appendChild(el("span","mute","No verdict yet")); }
+function render(){
+  document.getElementById("banner").hidden=!example;
+  var n=PL.length, pr=document.getElementById("prog"); pr.textContent="";
+  var t=el("div","t"); var left=el("div",null, n+" player"+(n===1?"":"s")+" added"); var chipBox=el("span"); chipBox.id="liveChip"; t.appendChild(left); t.appendChild(chipBox); pr.appendChild(t);
+  var bar=el("div","bar"); var f=el("i"); f.style.width=Math.min(n/20,1)*100+"%"; bar.appendChild(f);
+  [3,20].forEach(function(x){ var tk=el("b"); tk.style.left=(x/20*100)+"%"; bar.appendChild(tk); }); pr.appendChild(bar);
+  pr.appendChild(el("p","mute", n<3 ? "Add at least 3 players to see a first verdict." : n<20 ? "Verdict is showing. Add more: 20 or more players makes it solid." : "20 or more players: a solid read.")); pr.lastChild.style.cssText="font-size:15px;margin:-4px 0 10px";
+  var list=document.getElementById("plist"); list.textContent="";
+  if(!n){ list.appendChild(el("div","empty","No players yet. Add your first one above.")); }
+  PL.forEach(function(p,i){
+    var r=el("div","pr"); r.appendChild(el("span","nme",(i+1)+". "+p.n)); r.appendChild(el("span","vals",p.a+" \u2192 "+p.b));
+    var x=el("button",null,"\u2715"); x.type="button"; x.setAttribute("aria-label","Remove "+p.n);
+    x.addEventListener("click",function(){ PL.splice(i,1); render(); });
+    r.appendChild(x); list.appendChild(r);
+  });
+  list.scrollTop=list.scrollHeight;
+  check();
+}
+function num1(s){ return parseFloat(String(s).replace(",",".")); }
+function addPlayer(){
+  var fn=document.getElementById("fn"), fa=document.getElementById("fa"), fb=document.getElementById("fb"), err=document.getElementById("err");
+  var a=num1(fa.value), b=num1(fb.value);
+  if(!isFinite(a)){ err.textContent="Enter the first run as a number."; fa.focus(); return; }
+  if(!isFinite(b)){ err.textContent="Enter the second run as a number."; fb.focus(); return; }
+  if(example){ PL=[]; example=false; }
+  PL.push({n:fn.value.trim()||("Player "+(PL.length+1)),a:a,b:b});
+  fn.value=""; fa.value=""; fb.value=""; err.textContent="";
+  render(); fn.focus();
+}
+document.getElementById("addForm").addEventListener("submit",function(e){ e.preventDefault(); addPlayer(); });
+document.getElementById("fn").addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); document.getElementById("fa").focus(); } });
+document.getElementById("fa").addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); document.getElementById("fb").focus(); } });
+document.getElementById("unit").addEventListener("input",function(){ if(MKEY==="other"){ UNIT=this.value||""; check(); } });
+document.getElementById("clr").addEventListener("click",function(){ PL=[]; example=false; render(); document.getElementById("fn").focus(); });
+document.getElementById("ex").addEventListener("click",function(){ MKEY="speed"; UNIT="yd/s"; PL=EXAMPLE.map(function(r){return {n:r[0],a:r[1],b:r[2]};}); example=true; mchips(); render(); });
+document.getElementById("padd").addEventListener("click",function(){
+  var got=parse(document.getElementById("paste").value), lines=document.getElementById("paste").value.split(/\r?\n/).filter(function(l){return l.trim();}).length;
+  var msg=document.getElementById("pmsg");
+  if(!got.length){ msg.textContent="No players found. Use: name, first run, second run."; return; }
+  if(example){ PL=[]; example=false; }
+  got.forEach(function(p){ PL.push({n:"Player "+(PL.length+1),a:p[0],b:p[1]}); });
+  document.getElementById("paste").value=""; msg.textContent="Added "+got.length+(got.length<lines?" ("+(lines-got.length)+" lines skipped)":"")+".";
+  render();
+});
+window.__stats=stats;
+
+answer(); legend(); chips(); rows(); mchips();
+PL=EXAMPLE.map(function(r){return {n:r[0],a:r[1],b:r[2]};}); render();
+})();
+</script>
+</body>
+</html>
